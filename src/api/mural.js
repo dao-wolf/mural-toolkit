@@ -18,7 +18,9 @@ const fetchAllMurals = async (workspaceId) => {
       const muralsInPage = pageData.value;
       console.log(`Number of murals fetched in this page: ${muralsInPage.length}`);// Log the count of items in the current page
 
-      allMurals = allMurals.concat(pageData);
+      if (!pageData && !Array.isArray(muralsInPage) || muralsInPage.length === 0) throw new Error('No murals data found to export.');
+      allMurals = allMurals.concat(pageData.value);
+      
       next = pageData.next || ''; // Update the 'next' parameter
     } while (next); // Continue until there's no 'next' value
 

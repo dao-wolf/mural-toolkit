@@ -131,3 +131,6 @@ dist
 
 #exports
 /exports
+
+#mac
+.DS_Store
