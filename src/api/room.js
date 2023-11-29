@@ -6,17 +6,24 @@ const BASE_URL = 'https://app.mural.co/api/public';
 const MURAL_API_VERSION = 'v1';
 
 const getRoomInfo = async (roomId) => {
-  try {
-        const response = await axios.get(`${BASE_URL}/${MURAL_API_VERSION}/rooms/${roomId}`, {
-          headers: { 'Authorization': `Bearer ${process.env.MURAL_API_KEY}` }
-        });
+  if (!roomId) {
+    throw new Error('Room ID is required to fetch room info.');
+  }
 
-        const roomData = response.data;
-        if (!roomData && typeof roomData != 'object') throw new Error('No murals data found to export.');
-        return roomData;
+  try {
+    const response = await axios.get(`${BASE_URL}/${MURAL_API_VERSION}/rooms/${roomId}`, {
+      headers: { 'Authorization': `Bearer ${process.env.MURAL_API_KEY}` }
+    });
+
+    if (!response.data || !response.data.value) {
+      throw new Error('Invalid response structure from API');
+    }
+
+    return response.data.value;
   } catch (error) {
-    console.error('Error fetching room data:', error);
-    throw error;
+    console.error('Error fetching room info:', error);
+    // Additional error handling can be added here if needed
+    throw error; // Re-throwing the error to be handled by the caller
   }
 };
 

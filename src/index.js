@@ -1,9 +1,9 @@
 // src/index.js
-const { exportMurals } = require('./services/exporter');
+const { exportMuralsWithRoomInfo } = require('./services/exporter');
 
 const main = async () => {
   const workspaceId = process.env.QMETRIC_WS_ID; // Replace with actual Room ID
-  await exportMurals(workspaceId);
+  await exportMuralsWithRoomInfo(workspaceId);
 };
 
 main().catch(err => {
