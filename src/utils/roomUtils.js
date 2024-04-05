@@ -1,6 +1,6 @@
 // src/utils/roomUtils.js
 const { getRoomInfo } = require('../api/room');
-const delay = require('./generalUtils').delay;  // Assuming delay is in generalUtils.js
+const { delay } = require('./generalUtils');
 
 const CHUNK_SIZE = 10; // Adjust as needed
 const DELAY_MS = 1000; // Delay in milliseconds

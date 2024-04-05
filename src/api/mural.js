@@ -23,8 +23,6 @@ const fetchAllMurals = async (workspaceId) => {
       
       next = pageData.next || ''; // Update the 'next' parameter
     } while (next); // Continue until there's no 'next' value
-
-
     return allMurals;
   } catch (error) {
     console.error('Error fetching murals from workspace:', error);
