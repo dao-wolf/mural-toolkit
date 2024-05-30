@@ -1,10 +1,12 @@
 // src/api/mural.js
 const axios = require('axios');
+const { delay } = require('../utils');
 require('dotenv').config();
 
 const BASE_URL = 'https://app.mural.co/api/public';
 const MURAL_API_VERSION = 'v1';
 const { MURAL_API_KEY } = process.env;
+const DELAY_MS = 5000; // Delay in milliseconds
 
 const fetchAllMurals = async (workspaceId) => {
   let next = '';
@@ -25,8 +27,7 @@ const fetchAllMurals = async (workspaceId) => {
 
       if (!pageData && !Array.isArray(muralsInPage) || muralsInPage.length === 0) throw new Error('No murals data found to export.');
       allMurals = allMurals.concat(pageData.value);
-      
-      next = pageData.next || ''; // Update the 'next' parameter
+      // next = pageData.next || ''; // Update the 'next' parameter
     } while (next); // Continue until there's no 'next' value
     return allMurals;
   } catch (error) {
@@ -49,10 +50,16 @@ const getExportIdForMuralToPDF = async (muralId) => {
 
   try {
     const response = await axios(options);
-    return response.data;
+    console.log('getExportIdForMuralToPDF response:', response.data, response.status);
+    
+    const xRateLimitReset = response.headers['x-ratelimit-reset'];
+    const xRateLimitRemaining = response.headers['x-ratelimit-remaining'];
+    
+    const { exportId } = response.data.value; // Extract the export ID from the response
+    return { xRateLimitReset: xRateLimitReset, xRateLimitRemaining: xRateLimitRemaining, exportId: exportId };
   } catch (error) {
     console.error('Error exporting mural to PDF:', error.message);
-    throw error;
+    return error;
   }
 };
 
@@ -68,10 +75,13 @@ const getExportDownloadUrl = async (muralId, exportId) => {
 
   try {
     const response = await axios(options);
-    return response.data; // This should contain the download URL
+    const xRateLimitReset = response.headers['x-ratelimit-reset'];
+    const xRateLimitRemaining = response.headers['x-ratelimit-remaining'];
+    const url = response.data.value.url || options.url;
+    return { xRateLimitReset: xRateLimitReset, xRateLimitRemaining: xRateLimitRemaining, exportDownloadUrl: url };
   } catch (error) {
-    console.error('Error fetching export download URL:', error.message);
-    throw error; // Rethrow the error to be handled by the caller
+    console.error('Error fetching export download URL:', options.url, error.message);
+    return error;
   }
 };
 

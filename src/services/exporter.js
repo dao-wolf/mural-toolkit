@@ -38,7 +38,8 @@ const mapMuralToCsvRow = (mural) => {
   ];
 };
 
-const exportMuralsWithRoomInfo = async (workspaceId) => {
+const generateMuralWithRoomInfoCSV = async (workspaceId) => {
+  const filePath = 'exports/murals_with_room_info.csv';
   try {
     const murals = await fetchAllMurals(workspaceId);
     const uniqueRoomIds = [...new Set(murals.map(mural => mural.roomId))];
@@ -51,7 +52,6 @@ const exportMuralsWithRoomInfo = async (workspaceId) => {
     }));
 
     const csvData = convertToCSV(muralsWithRoomName, headers, mapMuralToCsvRow);
-    const filePath = 'exports/murals_with_room_info.csv';
     fs.writeFileSync(filePath, csvData);
     console.log(`Exported murals with room info to ${filePath}`);
   } catch (error) {
@@ -60,10 +60,10 @@ const exportMuralsWithRoomInfo = async (workspaceId) => {
 };
 
 const exportMurals = async (workspaceId) => {
+  const filePath = `exports/room_${workspaceId}_murals.csv`;
   try {
     const murals = await fetchAllMurals(workspaceId);
     const csvData = convertToCSV(murals, headers, mapMuralToCsvRow);
-    const filePath = `exports/room_${workspaceId}_murals.csv`;
     fs.writeFileSync(filePath, csvData);
     console.log(`Exported murals for room ${workspaceId} to ${filePath}`);
   } catch (error) {
@@ -71,6 +71,22 @@ const exportMurals = async (workspaceId) => {
   }
 };
 
+const exportDownloadUrls = (workspaceId, exportDownloadData) => {
+  const filePath = path.join(__dirname, `../../exports/download_${workspaceId}_murals.csv`);
+  
+  // Assuming downloadData is an array of objects { muralId, url }
+  const headers = 'Mural ID,Download URL\n';
+  const csvData = exportDownloadData.reduce((csv, item) => {
+    return csv + `${item.muralId},${item.url}\n`; // Ensure item.url and item.muralId are properly escaped if necessary
+  }, headers);
+
+  try {
+    fs.writeFileSync(filePath, csvData);
+  } catch (error) {
+    console.error('Error saving export download URLs to CSV file:', error.message);
+  }
+};
+
 module.exports = {
-  exportMurals, exportMuralsWithRoomInfo
+  generateMuralWithRoomInfoCSV, exportMurals, exportDownloadUrls
 };
