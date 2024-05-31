@@ -2,7 +2,7 @@
 const { fetchAllMurals } = require('../api/mural');
 const { getExportIdForMuralToPDF, getExportDownloadUrl } = require('../api/mural');
 const { executeWithRateLimit } = require('../api/apiRateLimitUtils');
-const { exportDownloadUrls } = require('./exporter');
+const { exportDownloadUrlsToCSV } = require('./exporter');
 const { downloadFile } = require('../utils/downloadFile');
 const path = require('path');
 const fs = require('fs');
@@ -20,15 +20,20 @@ const createGetExportIdActions = (murals) => {
   return murals.map(mural => async () => {
     const { xRateLimitReset, xRateLimitRemaining, exportId } = await getExportIdForMuralToPDF(mural.id);
     updateRateLimits(xRateLimitReset, xRateLimitRemaining);
+    console.log('createGetExportIdActions response:', mural.id, exportId);
     return exportId;
   });
 }
 
-const createFetchDownloadUrlActions = (murals, exportIds) => {
+const createFetchDownloadDataActions = (murals, exportIds) => {
   return murals.map((mural, index) => async () => {
-    const { xRateLimitReset, xRateLimitRemaining, exportDownloadUrl } = await getExportDownloadUrl(mural.id, exportIds[index])
+    let exportId = exportIds[index];
+    const { xRateLimitReset, xRateLimitRemaining, exportDownloadUrl } = await getExportDownloadUrl(mural.id, exportId)
+    const downloadUrl = exportDownloadUrl || mural._canvasLink;
+    const downloadData = { muralId: mural.id, url: downloadUrl };
     updateRateLimits(xRateLimitReset, xRateLimitRemaining);
-    return exportDownloadUrl;
+    console.log('createFetchDownloadUrlActions response:', downloadData);
+    return downloadData;
   });
 }
 
@@ -57,45 +62,51 @@ const fetchDownloadUrlsToCSV = async (workspaceId) => {
     await delay(5000);
 
     // Prepare actions for fetching download URLs with rate limiting
-    const fetchDownloadUrlActions = createFetchDownloadUrlActions(murals, exportIds);
-    const downloadUrls = await executeWithRateLimit(fetchDownloadUrlActions, RATE_LIMIT_RESET, RATE_LIMIT_REMAINING);
-    console.log('Download Url:', downloadUrls.length);
-
-    // Some murals may not be able to return download URLs so we need to add them to the CSV to deal with manually
-    // we should proceed with the download of the murals that have a download URL
-
-    // Create actions for downloading each exported PDF
-    const downloadActions = createDownloadActions(murals, downloadUrls);
-    const downloadedFiles = await executeWithRateLimit(downloadActions, RATE_LIMIT_RESET, RATE_LIMIT_REMAINING);
-    console.log('Downloaded Files:', downloadedFiles.length);
-    
-    // let downloadData = [];
-    // Create actions for downloading each exported PDF
-    // for (let i = 0; i < murals.length; i++) {
-    //   const mural = murals[i];
-    //   const downloadUrl = downloadUrls[i];
-      
-    //   if (!downloadUrl) {
-    //     throw new Error(`Download URL not found for mural ${mural.id}`);
-    //   }
-
-    //   downloadData.push({ muralId: mural.id, url: downloadUrl });
-      
-    //   const safeName = mural.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    //   const fileName = `${safeName}-${mural.id}.pdf`;
-    //   const downloadPath = path.join(__dirname, '../../exports', fileName);
-      
-    //   await downloadFile(downloadUrl, downloadPath);
-    //   await delay(5000);
-    //   console.log(`Downloaded: ${fileName}`);
-    // }
-
+    const fetchDownloadDataActions = createFetchDownloadDataActions(murals, exportIds);
+    const downloadData = await executeWithRateLimit(fetchDownloadDataActions, RATE_LIMIT_RESET, RATE_LIMIT_REMAINING);
+    console.log('Download Url:', Object.keys(downloadData).length);
     // Export all download URLs at once to a CSV
-    // exportDownloadUrls(workspaceId, downloadData);
+    exportDownloadUrlsToCSV(workspaceId, downloadData);
+
+    return {murals, downloadUrls: downloadData};
 
   } catch (error) {
     console.error('Failed to fetch download URLs and export to CSV:', error);
   }
 };
 
-module.exports = { fetchDownloadUrlsToCSV };
+const downloadMuralBoards = async (murals, downloadUrls) => {
+  try {
+       // Create actions for downloading each exported PDF
+       const downloadActions = createDownloadActions(murals, downloadUrls);
+       const downloadedFiles = await executeWithRateLimit(downloadActions, RATE_LIMIT_RESET, RATE_LIMIT_REMAINING);
+       console.log('Downloaded Files:', downloadedFiles.length);
+       
+       // let downloadData = [];
+       // Create actions for downloading each exported PDF
+       // for (let i = 0; i < murals.length; i++) {
+       //   const mural = murals[i];
+       //   const downloadUrl = downloadUrls[i];
+         
+       //   if (!downloadUrl) {
+       //     throw new Error(`Download URL not found for mural ${mural.id}`);
+       //   }
+   
+       //   downloadData.push({ muralId: mural.id, url: downloadUrl });
+         
+       //   const safeName = mural.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+       //   const fileName = `${safeName}-${mural.id}.pdf`;
+       //   const downloadPath = path.join(__dirname, '../../exports', fileName);
+         
+       //   await downloadFile(downloadUrl, downloadPath);
+       //   await delay(5000);
+       //   console.log(`Downloaded: ${fileName}`);
+       // }
+   
+  
+  } catch (error) {
+    console.error('Failed to download mural board:', error);
+  }
+}
+
+module.exports = { fetchDownloadUrlsToCSV, downloadMuralBoards };

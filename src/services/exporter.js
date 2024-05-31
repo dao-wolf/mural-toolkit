@@ -1,4 +1,5 @@
 // src/services/exporter.js
+const path = require('path');
 const fs = require('fs');
 const { fetchAllMurals } = require('../api/mural');
 const { getRoomInfo } = require('../api/room');
@@ -71,22 +72,19 @@ const exportMurals = async (workspaceId) => {
   }
 };
 
-const exportDownloadUrls = (workspaceId, exportDownloadData) => {
+const exportDownloadUrlsToCSV = (workspaceId, exportDownloadData) => {
   const filePath = path.join(__dirname, `../../exports/download_${workspaceId}_murals.csv`);
   
-  // Assuming downloadData is an array of objects { muralId, url }
-  const headers = 'Mural ID,Download URL\n';
-  const csvData = exportDownloadData.reduce((csv, item) => {
-    return csv + `${item.muralId},${item.url}\n`; // Ensure item.url and item.muralId are properly escaped if necessary
-  }, headers);
+  const headers = 'Workspace ID, Mural ID, Download URL\n';
+  const csvData = exportDownloadData.map(data => `${workspaceId},${data.muralId},${data.url}`).join('\n');
 
   try {
-    fs.writeFileSync(filePath, csvData);
+    fs.writeFileSync(filePath, headers + csvData);
   } catch (error) {
     console.error('Error saving export download URLs to CSV file:', error.message);
   }
 };
 
 module.exports = {
-  generateMuralWithRoomInfoCSV, exportMurals, exportDownloadUrls
+  generateMuralWithRoomInfoCSV, exportMurals, exportDownloadUrlsToCSV
 };

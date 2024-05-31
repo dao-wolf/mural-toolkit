@@ -26,7 +26,6 @@ const executeWithRateLimit = async (actions, rateLimitReset, rateLimitRemaining)
     const results = [];
     for (const action of actions) {
         const result = await action();
-        console.log('Action result:', result);
         results.push(result);
         
         // Calculate the time until reset in seconds

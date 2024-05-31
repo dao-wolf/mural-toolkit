@@ -50,7 +50,6 @@ const getExportIdForMuralToPDF = async (muralId) => {
 
   try {
     const response = await axios(options);
-    console.log('getExportIdForMuralToPDF response:', response.data, response.status);
     
     const xRateLimitReset = response.headers['x-ratelimit-reset'];
     const xRateLimitRemaining = response.headers['x-ratelimit-remaining'];
@@ -58,7 +57,7 @@ const getExportIdForMuralToPDF = async (muralId) => {
     const { exportId } = response.data.value; // Extract the export ID from the response
     return { xRateLimitReset: xRateLimitReset, xRateLimitRemaining: xRateLimitRemaining, exportId: exportId };
   } catch (error) {
-    console.error('Error exporting mural to PDF:', error.message);
+    console.error('Failed to getExportIdForMuralToPDF from Mural API:', error.message);
     return error;
   }
 };
@@ -77,10 +76,10 @@ const getExportDownloadUrl = async (muralId, exportId) => {
     const response = await axios(options);
     const xRateLimitReset = response.headers['x-ratelimit-reset'];
     const xRateLimitRemaining = response.headers['x-ratelimit-remaining'];
-    const url = response.data.value.url || options.url;
+    const url = response.data.value.url
     return { xRateLimitReset: xRateLimitReset, xRateLimitRemaining: xRateLimitRemaining, exportDownloadUrl: url };
   } catch (error) {
-    console.error('Error fetching export download URL:', options.url, error.message);
+    console.error('Failed to getExportDownloadUrl from Mural API:', options.url, error.message);
     return error;
   }
 };
